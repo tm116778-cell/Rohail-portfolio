@@ -72,6 +72,10 @@ app.use(
   })
 );
 
+app.get('/', (_req, res) => {
+  res.json({ success: true, message: 'Portfolio API is running' });
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({ success: true, message: 'API is healthy' });
 });
