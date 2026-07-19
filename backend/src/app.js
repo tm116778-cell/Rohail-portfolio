@@ -23,8 +23,7 @@ app.use(
 );
 
 const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
-  'https://portfolio-web-sjtg.vercel.app',
+  process.env.CLIENT_URL,
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
@@ -36,12 +35,16 @@ const allowedOrigins = [
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow Vite/local ports and configured CLIENT_URL
-      const isLocalVite =
-        origin &&
-        /^http:\/\/(localhost|127\.0\.0\.1):(517\d|4173)$/.test(origin);
+      // Allow requests with no origin (mobile apps, curl, etc)
+      if (!origin) return callback(null, true);
 
-      if (!origin || allowedOrigins.includes(origin) || isLocalVite) {
+      // Allow all Vercel deployments (production + preview URLs)
+      const isVercel = /\.vercel\.app$/.test(origin);
+
+      // Allow Vite/local ports
+      const isLocalVite = /^http:\/\/(localhost|127\.0\.0\.1):(517\d|4173)$/.test(origin);
+
+      if (isVercel || isLocalVite || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
       return callback(new Error(`CORS blocked for origin: ${origin}`));
