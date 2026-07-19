@@ -46,10 +46,7 @@ npm run dev
 
 On first start the API creates the admin user from:
 
-```env
-ADMIN_EMAIL=admin@rohail.dev
-ADMIN_PASSWORD=RohailAdmin@2026
-```
+
 
 Change these values in `backend/.env` before deploying. Never commit `.env`.
 
