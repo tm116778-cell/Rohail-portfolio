@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://portfolio-web-zq15.vercel.app/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://portfolio-web-8obl.vercel.app/api';
 const TOKEN_KEY = 'portfolio_admin_token';
 
 export function getToken() {
