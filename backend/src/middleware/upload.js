@@ -1,6 +1,6 @@
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -9,26 +9,15 @@ cloudinary.config({
 });
 
 const storage = new CloudinaryStorage({
-  cloudinary,
+  cloudinary: cloudinary,
   params: {
-    folder: 'rohail-portfolio',
+    folder: 'portfolio',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-    transformation: [{ width: 1200, crop: 'limit' }],
   },
 });
 
-const allowedMime = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-
-const fileFilter = (_req, file, cb) => {
-  if (!allowedMime.has(file.mimetype)) {
-    return cb(new Error('Only JPEG, PNG, WEBP, and GIF images are allowed'));
-  }
-  cb(null, true);
-};
-
 const upload = multer({
-  storage,
-  fileFilter,
+  storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024,
     files: 10,

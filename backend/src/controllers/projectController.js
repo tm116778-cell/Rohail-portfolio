@@ -1,5 +1,6 @@
+const path = require('path');
+const fs = require('fs');
 const Project = require('../models/Project');
-const { cloudinary } = require('../middleware/upload');
 
 const mapProject = (project) => ({
   id: project._id,
@@ -11,9 +12,9 @@ const mapProject = (project) => ({
   featured: project.featured,
   order: project.order,
   images: project.images.map((img) => ({
-    filename: img.filename,
+    filename: img.filename, // This is the Cloudinary public_id now
     originalName: img.originalName,
-    url: img.path, // Cloudinary URL stored in path field
+    url: img.path, // This is the secure Cloudinary URL
   })),
   createdAt: project.createdAt,
   updatedAt: project.updatedAt,
@@ -71,10 +72,9 @@ const createProject = async (req, res, next) => {
       }
     }
 
-    // Cloudinary: file.path = URL, file.filename = public_id
     const images = req.files.map((file) => ({
-      filename: file.filename,   // Cloudinary public_id
-      path: file.path,           // Cloudinary URL
+      filename: file.filename,
+      path: file.path,
       originalName: file.originalname,
     }));
 
@@ -96,10 +96,10 @@ const createProject = async (req, res, next) => {
       data: mapProject(project),
     });
   } catch (error) {
-    // Delete uploaded images from Cloudinary if project creation fails
     if (req.files?.length) {
+      const { cloudinary } = require('../middleware/upload');
       req.files.forEach((file) => {
-        cloudinary.uploader.destroy(file.filename).catch(console.error);
+        if (file.filename) cloudinary.uploader.destroy(file.filename);
       });
     }
     next(error);
@@ -140,11 +140,10 @@ const updateProject = async (req, res, next) => {
     }
 
     if (req.files?.length) {
-      // Delete old images from Cloudinary
+      const { cloudinary } = require('../middleware/upload');
       project.images.forEach((img) => {
-        cloudinary.uploader.destroy(img.filename).catch(console.error);
+        if (img.filename) cloudinary.uploader.destroy(img.filename);
       });
-      // Save new Cloudinary images
       project.images = req.files.map((file) => ({
         filename: file.filename,
         path: file.path,
@@ -171,9 +170,9 @@ const deleteProject = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Project not found' });
     }
 
-    // Delete images from Cloudinary
+    const { cloudinary } = require('../middleware/upload');
     project.images.forEach((img) => {
-      cloudinary.uploader.destroy(img.filename).catch(console.error);
+      if (img.filename) cloudinary.uploader.destroy(img.filename);
     });
 
     await project.deleteOne();
