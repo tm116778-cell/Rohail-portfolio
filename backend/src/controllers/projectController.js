@@ -1,6 +1,5 @@
-const path = require('path');
-const fs = require('fs');
 const Project = require('../models/Project');
+const { cloudinary } = require('../middleware/upload');
 
 const mapProject = (project) => ({
   id: project._id,
@@ -14,8 +13,7 @@ const mapProject = (project) => ({
   images: project.images.map((img) => ({
     filename: img.filename,
     originalName: img.originalName,
-    // Relative path works through Vite /uploads proxy on any frontend port
-    url: `/uploads/${img.filename}`,
+    url: img.path, // Cloudinary URL stored in path field
   })),
   createdAt: project.createdAt,
   updatedAt: project.updatedAt,
@@ -73,9 +71,10 @@ const createProject = async (req, res, next) => {
       }
     }
 
+    // Cloudinary: file.path = URL, file.filename = public_id
     const images = req.files.map((file) => ({
-      filename: file.filename,
-      path: file.path,
+      filename: file.filename,   // Cloudinary public_id
+      path: file.path,           // Cloudinary URL
       originalName: file.originalname,
     }));
 
@@ -97,9 +96,10 @@ const createProject = async (req, res, next) => {
       data: mapProject(project),
     });
   } catch (error) {
+    // Delete uploaded images from Cloudinary if project creation fails
     if (req.files?.length) {
       req.files.forEach((file) => {
-        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        cloudinary.uploader.destroy(file.filename).catch(console.error);
       });
     }
     next(error);
@@ -140,10 +140,11 @@ const updateProject = async (req, res, next) => {
     }
 
     if (req.files?.length) {
+      // Delete old images from Cloudinary
       project.images.forEach((img) => {
-        const filePath = path.join(__dirname, '../../uploads', img.filename);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        cloudinary.uploader.destroy(img.filename).catch(console.error);
       });
+      // Save new Cloudinary images
       project.images = req.files.map((file) => ({
         filename: file.filename,
         path: file.path,
@@ -170,9 +171,9 @@ const deleteProject = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Project not found' });
     }
 
+    // Delete images from Cloudinary
     project.images.forEach((img) => {
-      const filePath = path.join(__dirname, '../../uploads', img.filename);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      cloudinary.uploader.destroy(img.filename).catch(console.error);
     });
 
     await project.deleteOne();
